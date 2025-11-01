@@ -14,15 +14,34 @@ This app uses a Hidden Markov Model (HMM) to identify and describe different mar
 regimes for the Nifty 50 index. The data is fetched dynamically from Yahoo Finance.
 """)
 
+# --- Sidebar for User Inputs ---
+st.sidebar.header('Model Settings')
+
+start_date = st.sidebar.date_input(
+    "Start Date",
+    value=datetime.date(2015, 1, 1),
+    min_value=datetime.date(2000, 1, 1),
+    max_value=datetime.date.today() - datetime.timedelta(days=1)
+)
+
+end_date = st.sidebar.date_input(
+    "End Date",
+    value=datetime.date.today(),
+    min_value=start_date + datetime.timedelta(days=1),
+    max_value=datetime.date.today()
+)
+
+n_components = st.sidebar.slider("Number of HMM Components", min_value=2, max_value=10, value=5, step=1)
+volatility_window = st.sidebar.slider("Volatility Window (days)", min_value=5, max_value=100, value=15, step=1)
+
+
 # --- Data Fetching and Model Training (with Caching) ---
 @st.cache_data
-def get_data_and_model():
+def get_data_and_model(start_date, end_date, n_components, volatility_window):
     """
     Fetches Nifty 50 data, processes it, fits an HMM model, analyzes the regimes,
     and generates descriptive labels for each regime.
     """
-    start_date = "2015-01-01"
-    end_date = datetime.date.today()
     symbol = "^NSEI"
 
     # Download data
@@ -36,9 +55,13 @@ def get_data_and_model():
     df = data[["Open", "High", "Low", "Close", "Volume"]].copy()
     df["Returns"] = df["Close"].pct_change()
     df["Range"] = (df["High"] / df["Low"]) - 1
-    df['Volatility'] = df['Returns'].rolling(window=15).std() # Shortened window
+    df['Volatility'] = df['Returns'].rolling(window=volatility_window).std()
     df["NormalizedReturn"] = df["Returns"] / (df["Volatility"] + 1e-8)
     df.dropna(inplace=True)
+
+    if df.shape[0] < n_components:
+        st.error(f"Not enough data points ({df.shape[0]}) to fit the model with {n_components} components. Please select a larger date range or a smaller volatility window.")
+        return None, None, None, None
 
     # Prepare and scale data
     X_train = df[["Returns", "Range", "Volatility", "NormalizedReturn"]]
@@ -46,7 +69,7 @@ def get_data_and_model():
     X_scaled = scaler.fit_transform(X_train)
 
     # Fit HMM model
-    model = GaussianHMM(n_components=5, covariance_type="full", n_iter=100, random_state=42) # Increased components
+    model = GaussianHMM(n_components=n_components, covariance_type="full", n_iter=100, random_state=42)
     model.fit(X_scaled)
 
     # Predict hidden states
@@ -96,7 +119,7 @@ def get_data_and_model():
     return df, model, regime_characteristics, regime_labels
 
 # --- Main App Logic ---
-df, model, regime_characteristics, regime_labels = get_data_and_model()
+df, model, regime_characteristics, regime_labels = get_data_and_model(start_date, end_date, n_components, volatility_window)
 
 if df is not None:
     # --- Display Market Regime Chart ---
@@ -106,10 +129,13 @@ if df is not None:
 
     prices = df['Close']
 
+    # Colorblind-friendly palette
+    colors = plt.cm.viridis(np.linspace(0, 1, model.n_components))
+
     for i in range(model.n_components):
         state_prices = np.full(prices.shape, np.nan)
         state_prices[df['Regime'] == i] = prices[df['Regime'] == i]
-        ax.plot(df.index, state_prices, label=regime_labels[i])
+        ax.plot(df.index, state_prices, label=regime_labels[i], color=colors[i])
 
     ax.set_title('Nifty 50 Market Regimes')
     ax.set_xlabel('Date')
