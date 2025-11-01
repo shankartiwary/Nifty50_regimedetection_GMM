@@ -36,7 +36,7 @@ def get_data_and_model():
     df = data[["Open", "High", "Low", "Close", "Volume"]].copy()
     df["Returns"] = df["Close"].pct_change()
     df["Range"] = (df["High"] / df["Low"]) - 1
-    df['Volatility'] = df['Returns'].rolling(window=30).std()
+    df['Volatility'] = df['Returns'].rolling(window=15).std() # Shortened window
     df.dropna(inplace=True)
 
     # Prepare and scale data
@@ -45,7 +45,7 @@ def get_data_and_model():
     X_scaled = scaler.fit_transform(X_train)
 
     # Fit HMM model
-    model = GaussianHMM(n_components=4, covariance_type="full", n_iter=100, random_state=42)
+    model = GaussianHMM(n_components=5, covariance_type="full", n_iter=100, random_state=42) # Increased components
     model.fit(X_scaled)
 
     # Predict hidden states
@@ -68,6 +68,8 @@ def get_data_and_model():
         # Volatility description (based on sorted order)
         if i < 2:
             vol_desc = "Low Volatility"
+        elif i < 4:
+            vol_desc = "Mid Volatility"
         else:
             vol_desc = "High Volatility"
 
