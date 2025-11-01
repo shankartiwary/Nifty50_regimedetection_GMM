@@ -37,10 +37,11 @@ def get_data_and_model():
     df["Returns"] = df["Close"].pct_change()
     df["Range"] = (df["High"] / df["Low"]) - 1
     df['Volatility'] = df['Returns'].rolling(window=15).std() # Shortened window
+    df["NormalizedReturn"] = df["Returns"] / (df["Volatility"] + 1e-8)
     df.dropna(inplace=True)
 
     # Prepare and scale data
-    X_train = df[["Returns", "Range", "Volatility"]]
+    X_train = df[["Returns", "Range", "Volatility", "NormalizedReturn"]]
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_train)
 
@@ -85,7 +86,7 @@ def get_data_and_model():
 
     regime_characteristics = pd.DataFrame(
         sorted_means,
-        columns=['Mean Return', 'Mean Range', 'Mean Volatility'],
+        columns=['Mean Return', 'Mean Range', 'Mean Volatility', 'Mean Normalized Return'],
         index=[f'Regime {i}' for i in range(model.n_components)] # Use simple index for the table
     )
     # Add the descriptive label as a column
