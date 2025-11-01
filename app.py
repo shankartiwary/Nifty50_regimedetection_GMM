@@ -57,6 +57,8 @@ def get_data_and_model(start_date, end_date, n_components, volatility_window):
     df["Range"] = (df["High"] / df["Low"]) - 1
     df['Volatility'] = df['Returns'].rolling(window=volatility_window).std()
     df["NormalizedReturn"] = df["Returns"] / (df["Volatility"] + 1e-8)
+    rolling_close = df['Close'].rolling(window=volatility_window)
+    df['NormalizedClose'] = (df['Close'] - rolling_close.min()) / (rolling_close.max() - rolling_close.min())
     df.dropna(inplace=True)
 
     if df.shape[0] < n_components:
@@ -64,7 +66,7 @@ def get_data_and_model(start_date, end_date, n_components, volatility_window):
         return None, None, None, None
 
     # Prepare and scale data
-    X_train = df[["Returns", "Range", "Volatility", "NormalizedReturn"]]
+    X_train = df[["Returns", "Range", "Volatility", "NormalizedReturn", "NormalizedClose"]]
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X_train)
 
@@ -109,7 +111,7 @@ def get_data_and_model(start_date, end_date, n_components, volatility_window):
 
     regime_characteristics = pd.DataFrame(
         sorted_means,
-        columns=['Mean Return', 'Mean Range', 'Mean Volatility', 'Mean Normalized Return'],
+        columns=['Mean Return', 'Mean Range', 'Mean Volatility', 'Mean Normalized Return', 'Mean Normalized Close'],
         index=[f'Regime {i}' for i in range(model.n_components)] # Use simple index for the table
     )
     # Add the descriptive label as a column
