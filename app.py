@@ -137,16 +137,18 @@ if df is not None:
         state_prices[df['Regime'] == i] = prices[df['Regime'] == i]
         ax.plot(df.index, state_prices, label=regime_labels[i], color=colors[i])
 
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Price')
+    ax.set_xlabel('Date', color='green')
+    ax.set_ylabel('Price', color='green')
+    ax.tick_params(axis='x', colors='green')
+    ax.tick_params(axis='y', colors='green')
 
     # Create a table-like legend
     legend_elements = [plt.Line2D([0], [0], color=colors[i], lw=4, label=regime_labels[i]) for i in range(len(regime_labels))]
     ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1))
 
     ax.grid(linestyle='dotted', alpha=0.5)
-    fig.patch.set_alpha(0.0)
-    ax.patch.set_alpha(0.0)
+    fig.patch.set_facecolor('grey')
+    ax.patch.set_facecolor('grey')
 
     st.pyplot(fig)
 
