@@ -147,8 +147,11 @@ if df is not None:
     ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(1, 1))
 
     ax.grid(linestyle='dotted', alpha=0.5)
-    fig.patch.set_facecolor('grey')
-    ax.patch.set_facecolor('grey')
+    fig.patch.set_facecolor('#f5f5f5')
+    ax.patch.set_facecolor('#f5f5f5')
+
+    for spine in ax.spines.values():
+        spine.set_visible(False)
 
     st.pyplot(fig)
 
