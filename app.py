@@ -5,6 +5,7 @@ import yfinance as yf
 from hmmlearn.hmm import GaussianHMM
 import matplotlib.pyplot as plt
 import datetime
+from sklearn.preprocessing import StandardScaler
 
 # --- App Title and Description ---
 st.title('Nifty 50 Market Regime Detection')
@@ -36,17 +37,22 @@ def get_data_and_model():
     df = data[["Open", "High", "Low", "Close", "Volume"]].copy()
     df["Returns"] = df["Close"].pct_change()
     df["Range"] = (df["High"] / df["Low"]) - 1
+    df['Volatility'] = df['Returns'].rolling(window=30).std()
     df.dropna(inplace=True)
 
     # Prepare data for HMM
-    X_train = df[["Returns", "Range"]]
+    X_train = df[["Returns", "Range", "Volatility"]]
+
+    # Scale the data
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_train)
 
     # Fit HMM model
     model = GaussianHMM(n_components=4, covariance_type="full", n_iter=100, random_state=42)
-    model.fit(X_train)
+    model.fit(X_scaled)
 
     # Predict hidden states (regimes)
-    hidden_states = model.predict(X_train)
+    hidden_states = model.predict(X_scaled)
     df['Regime'] = hidden_states
 
     return df, model
