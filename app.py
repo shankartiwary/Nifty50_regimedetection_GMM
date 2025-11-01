@@ -130,7 +130,7 @@ if df is not None:
     prices = df['Close']
 
     # Colorblind-friendly palette
-    colors = plt.cm.viridis(np.linspace(0, 1, model.n_components))
+    colors = plt.cm.tab10(np.linspace(0, 1, model.n_components))
 
     for i in range(model.n_components):
         state_prices = np.full(prices.shape, np.nan)
